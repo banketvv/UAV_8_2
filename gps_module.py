@@ -92,20 +92,21 @@ def data_gps(gps_data):
         return None
 
 
-# Реализация алгоритма
-gps_data_gga = "$GPGGA,123519.487,3754.587,N,14507.036,W,1,08,0.9,545.4,M,46.9,M,,*47"
-gps_data_rmc = "$GPRMC,123519.487,A,3754.587,N,14507.036,W,000.0,360.0,120419,,,D"
+if __name__ == "__main__":
+    # Реализация алгоритма
+    gps_data_gga = "$GPGGA,123519.487,3754.587,N,14507.036,W,1,08,0.9,545.4,M,46.9,M,,*47"
+    gps_data_rmc = "$GPRMC,123519.487,A,3754.587,N,14507.036,W,000.0,360.0,120419,,,D"
 
-data_gps_gga = data_gps(gps_data_gga)
-data_gps_rmc = data_gps(gps_data_rmc)
+    data_gps_gga = data_gps(gps_data_gga)
+    data_gps_rmc = data_gps(gps_data_rmc)
 
-for data_source, data_gps_obj in zip(["GGA", "RMC"], [data_gps_gga, data_gps_rmc]):
-    if data_gps_obj:
-        print(f"Обработанные данные из {data_source}:")
-        print(f"Широта: {data_gps_obj['latitude']}")
-        print(f"Долгота: {data_gps_obj['longitude']}")
-        print(f"Высота: {data_gps_obj['altitude']}")
-        print(f"Скорость: {data_gps_obj['speed']}")
-        print(f"Время: {data_gps_obj['timestamp']}")
-    else:
-        print(f"Некорректные данные GPS из {data_source}.")
+    for data_source, data_gps_obj in zip(["GGA", "RMC"], [data_gps_gga, data_gps_rmc]):
+        if data_gps_obj:
+            print(f"Обработанные данные из {data_source}:")
+            print(f"Широта: {data_gps_obj['latitude']}")
+            print(f"Долгота: {data_gps_obj['longitude']}")
+            print(f"Высота: {data_gps_obj['altitude']}")
+            print(f"Скорость: {data_gps_obj['speed']}")
+            print(f"Время: {data_gps_obj['timestamp']}")
+        else:
+            print(f"Некорректные данные GPS из {data_source}.")
