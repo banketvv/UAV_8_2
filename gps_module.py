@@ -3,6 +3,8 @@ import time
 
 def convert_to_decimal(degree_str, direction):
     """Преобразует строку с градусами в десятичный формат."""
+    if not degree_str:  # Проверка на пустую строку
+        raise ValueError("Строка с градусами пуста")
     # Преобразуем строку в float
     degree_value = float(degree_str)
     degrees = int(degree_value // 100)
@@ -68,6 +70,24 @@ def data_gps(gps_data):
         hdr = data_parts[0]
         if hdr not in nmea_formats:
             raise ValueError("Неизвестный формат NMEA")
+
+        # Проверка на формат GGA
+        if data_parts[0] == "$GPGGA":
+            # Проверка минимальной длины данных и проверка на пустые поля
+            if len(data_parts) < 10 \
+                    or not data_parts[nmea_formats[hdr]["timestamp"]] \
+                    or not data_parts[nmea_formats[hdr]["latitude"][0]] \
+                    or not data_parts[nmea_formats[hdr]["longitude"][0]] \
+                    or not data_parts[nmea_formats[hdr]["altitude"]]:
+                raise ValueError("Недостаточно данных для анализа GGA.")
+        # Проверка на формат RMC для извлечения скорости
+        if data_parts[0] == "$GPRMC":
+            # Проверка минимальной длины данных и проверка на пустые поля
+            if len(data_parts) < 10 \
+                    or not data_parts[nmea_formats[hdr]["timestamp"]] \
+                    or not data_parts[nmea_formats[hdr]["latitude"][0]] \
+                    or not data_parts[nmea_formats[hdr]["longitude"][0]]:
+                raise ValueError("Недостаточно данных для анализа RMC.")
 
         timestamp_str = data_parts[nmea_formats[hdr]["timestamp"]]
         latitude = convert_to_decimal(data_parts[nmea_formats[hdr]["latitude"][0]],
