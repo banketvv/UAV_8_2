@@ -13,6 +13,18 @@ def convert_to_decimal(degree_str, direction):
     return decimal
 
 
+def get_timestamp(timestamp_str):
+    # Форматирование даты для mktime
+    # Текущая дата, чтобы использовать её вместе со временем
+    current_time = time.localtime()
+    current_date = time.strftime("%Y,%m,%d", current_time).split(',')
+    year, month, day = int(current_date[0]), int(current_date[1]), int(current_date[2])
+
+    # Преобразование времени
+    timestamp = time.strptime(f"{timestamp_str},{year},{month},{day}", "%H%M%S.%f,%Y,%m,%d")
+    return time.mktime(timestamp)
+
+
 def data_gps(gps_data):
     """Обработка данных с GPS.
 
@@ -28,37 +40,43 @@ def data_gps(gps_data):
         - timestamp: Время (секунды).
     """
 
+    nmea_formats = {
+        # Описание структуры формата GGA
+        "$GPGGA": {
+            "timestamp": 1,
+            "latitude": (2, 3),
+            "longitude": (4, 5),
+            "altitude": 9,
+            "speed": None,  # Скорость не доступна в GGA
+            "speed_multiplier": None
+        },
+        # Описание структуры формата RMC
+        "$GPRMC": {
+            "timestamp": 1,
+            "latitude": (3, 4),
+            "longitude": (5, 6),
+            "altitude": None,  # Высота недоступна в RMC
+            "speed": 7,
+            "speed_multiplier": 0.514444  # Преобразование узлов в м/с
+        }
+    }
+
     try:
         # Разделение строки NMEA по запятым
         data_parts = gps_data.split(",")
 
-        if data_parts[0] not in ["$GPGGA", "$GPRMC"]:
+        hdr = data_parts[0]
+        if hdr not in nmea_formats:
             raise ValueError("Неизвестный формат NMEA")
 
-        # Проверка на формат GGA
-        if data_parts[0] == "$GPGGA":  # Обработка данных GGA
-            timestamp_str = data_parts[1]  # Время фиксируется
-            latitude = convert_to_decimal(data_parts[2], data_parts[3])
-            longitude = convert_to_decimal(data_parts[4], data_parts[5])
-            altitude = float(data_parts[9])
-            speed = None  # Скорость не доступна в GGA
-        # Проверка на формат RMC для извлечения скорости
-        else:
-            timestamp_str = data_parts[1]
-            latitude = convert_to_decimal(data_parts[3], data_parts[4])
-            longitude = convert_to_decimal(data_parts[5], data_parts[6])
-            speed = float(data_parts[7]) * 0.514444  # Преобразование узлов в м/с
-            altitude = None  # Высота недоступна в RMC
-
-        # Форматирование даты для mktime
-        # Текущая дата, чтобы использовать её вместе со временем
-        current_time = time.localtime()
-        current_date = time.strftime("%Y,%m,%d", current_time).split(',')
-        year, month, day = int(current_date[0]), int(current_date[1]), int(current_date[2])
-
-        # Преобразование времени
-        timestamp = time.strptime(f"{timestamp_str},{year},{month},{day}", "%H%M%S.%f,%Y,%m,%d")
-        timestamp_seconds = time.mktime(timestamp)
+        timestamp_str = data_parts[nmea_formats[hdr]["timestamp"]]
+        latitude = convert_to_decimal(data_parts[nmea_formats[hdr]["latitude"][0]],
+                                      data_parts[nmea_formats[hdr]["latitude"][1]])
+        longitude = convert_to_decimal(data_parts[nmea_formats[hdr]["longitude"][0]],
+                                       data_parts[nmea_formats[hdr]["longitude"][1]])
+        altitude = None if nmea_formats[hdr]["altitude"] is None else float(data_parts[nmea_formats[hdr]["altitude"]])
+        speed = None if nmea_formats[hdr]["speed"] is None else \
+            float(data_parts[nmea_formats[hdr]["speed"]]) * float(nmea_formats[hdr]["speed_multiplier"])
 
         # Возвращение обработанных данных
         return {
@@ -66,7 +84,7 @@ def data_gps(gps_data):
             "longitude": longitude,
             "altitude": altitude,
             "speed": speed,
-            "timestamp": timestamp_seconds
+            "timestamp": get_timestamp(timestamp_str)
         }
 
     except Exception as e:
